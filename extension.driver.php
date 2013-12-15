@@ -74,23 +74,33 @@ class Extension_Stripe extends Extension {
 
     public function actionAppendEventFilterDocumentation($context) {
         // Todo not firing
-        var_dump($context);
     }
 
     public function actionEventPreSaveFilter($context) {
         $filters = $context['event']->eParamFILTERS;
         $proceed = false;
 
+
         foreach ($filters as $key => $val) {
             if (in_array($val, array_keys(Stripe_General::getAllFilters()))) {
                 $proceed = true;
             }
         }
-
-        if(!$proceed) return true;
+        if(!$proceed) {
+            return true;
+        }
 //        print_r($_POST); die();
-
-        if(!isset($_SESSION['symphony-stripe'])) {
+        if(is_array($_SESSION)) {
+            if(array_key_exists('order-id', $_SESSION)) {
+                $session_ord = $_SESSION['order-id'];
+            } else {
+                $session_ord = false;
+            }
+        } else {
+            $session_ord = false;
+        }
+        
+        if($session_ord!=$_POST['fields']['order-id']) {
             require_once(EXTENSIONS . '/stripe/lib/api/lib/Stripe.php');
             Stripe::setApiKey(Stripe_General::getApiKey());
 
@@ -197,15 +207,17 @@ class Extension_Stripe extends Extension {
             }
 
         } else {
-            $stripe = unserialize($_SESSION['symphony-stripe']);
+
+            $context['messages'][] = array('stripe', false, 'Duplicate purchase by an accidental page refresh was rejected.');
+//            $stripe = unserialize($_SESSION['symphony-stripe']);
 
             // Ensure updated stripe[...] fields replace empty fields
-            foreach($stripe as $key => $val) {
-                if(empty($val) && isset($_POST['stripe'][$key])) {
-                    $stripe[$key] = $_POST['stripe'][$key];
+//            foreach($stripe as $key => $val) {
+//                if(empty($val) && isset($_POST['stripe'][$key])) {
+//                    $stripe[$key] = $_POST['stripe'][$key];
                     // Todo consider updating stripe if user changes an optional field after tripe creation but prior to symphony event success
-                }
-            }
+//                }
+//            }
         }
 
         if (!empty($stripe)) {
@@ -219,7 +231,6 @@ class Extension_Stripe extends Extension {
                     }
                 }
             }
-
             // Add values of response for Symphony event to process
             if(is_array($context['fields'])) {
                 $context['fields'] = array_merge(Stripe_General::addStripeFieldsToSymphonyEventFields($stripe), $context['fields']);
@@ -233,12 +244,14 @@ class Extension_Stripe extends Extension {
             $_SESSION['symphony-stripe'] = serialize($stripe);
         }
 
+        $_SESSION['order-id'] = $_POST['fields']['order-id'];
+
+
         return $context;
     }
 
     public function actionEventPostSaveFilter($context) {
         // Clear session saved response
-        unset($_SESSION['symphony-stripe']);
     }
 
     public function actionAddCustomPreferenceFieldsets($context) {

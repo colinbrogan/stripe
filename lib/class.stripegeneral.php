@@ -61,7 +61,7 @@ Abstract Class Stripe_General {
     public static function emailPrimaryDeveloper($message) {
         if($primary = Symphony::Database()->fetchRow(0, "SELECT `first_name`, `last_name`, `email` FROM `tbl_authors` WHERE `primary` = 'yes'")) {
             $email = Email::create();
-
+            echo 'making email';
             $email->sender_name = (EmailGatewayManager::getDefaultGateway() == 'sendmail' ? Symphony::Configuration()->get('from_name', 'email_sendmail') : Symphony::Configuration()->get('from_name', 'email_smtp'));
             $email->sender_email_address = (EmailGatewayManager::getDefaultGateway() == 'sendmail' ? Symphony::Configuration()->get('from_address', 'email_sendmail') : Symphony::Configuration()->get('from_address', 'email_smtp'));
 
@@ -88,9 +88,14 @@ Abstract Class Stripe_General {
                 $result[$key] = $val;
             } elseif (!is_object($val) && !empty($val)) {
                 foreach($val as $k => $v) {
-                    if(!empty($v)) {
-                        $key = str_replace('_', '-', $k);
+                    if(!is_object($v) && !is_array($v) && !empty($v)) {
+                        $k = str_replace('_', '-', $k);
                         $result[$key . '-' . $k] = $v;
+                    } elseif (!is_object($v) && !empty($v)) {
+                        foreach($v as $k2 => $v2) {
+                            $k2 = str_replace('_', '-', $k);
+                            $result[$key . '-' . $k . '-' . $k2];
+                        }
                     }
                 }
                 self::addStripeFieldsToSymphonyEventFields($result);
