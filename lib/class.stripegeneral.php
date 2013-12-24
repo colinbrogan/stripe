@@ -61,7 +61,6 @@ Abstract Class Stripe_General {
     public static function emailPrimaryDeveloper($message) {
         if($primary = Symphony::Database()->fetchRow(0, "SELECT `first_name`, `last_name`, `email` FROM `tbl_authors` WHERE `primary` = 'yes'")) {
             $email = Email::create();
-            echo 'making email';
             $email->sender_name = (EmailGatewayManager::getDefaultGateway() == 'sendmail' ? Symphony::Configuration()->get('from_name', 'email_sendmail') : Symphony::Configuration()->get('from_name', 'email_smtp'));
             $email->sender_email_address = (EmailGatewayManager::getDefaultGateway() == 'sendmail' ? Symphony::Configuration()->get('from_address', 'email_sendmail') : Symphony::Configuration()->get('from_address', 'email_smtp'));
 
